@@ -1,0 +1,92 @@
+<?php
+
+namespace App\Filament\Clusters\Master\Resources\Satuans;
+
+use App\Filament\Clusters\Master\MasterCluster;
+use App\Filament\Clusters\Master\Resources\Satuans\Pages\ManageSatuans;
+use App\Models\Satuan;
+use BackedEnum;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\EditAction;
+use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
+use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
+use UnitEnum;
+
+class SatuanResource extends Resource
+{
+    protected static ?string $model = Satuan::class;
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedScale;
+
+    protected static string | UnitEnum | null $navigationGroup = 'Referensi';
+
+    protected static ?string $cluster = MasterCluster::class;
+
+    protected static ?string $recordTitleAttribute = 'nama';
+
+    public static function form(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                TextInput::make('nama')
+                    ->label('Nama Kategori')
+                    ->unique(ignoreRecord:true)
+                    ->required()
+                    ->validationMessages([
+                        'unique' => 'Nama kategori sudah ada',
+                        'required' => 'Nama kategori wajib di isi',
+                    ])
+                    ->columnSpanFull(),
+            ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->recordTitleAttribute('nama')
+            ->columns([
+                TextColumn::make('no')
+                    ->label('No.')
+                    ->rowIndex()
+                    ->width('70px')
+                    ->alignCenter(),
+
+                TextColumn::make('nama')
+                    ->label('Nama Satuan')
+                    ->sortable()
+                    ->searchable(),
+            ])
+            ->filters([
+                //
+            ])
+            ->recordActions([
+                EditAction::make()
+                    ->modalWidth('md'),
+                DeleteAction::make()
+                    ->before(function (Satuan $record, DeleteAction $action) {
+                        if ($record->barangs()->exists()) {
+                            Notification::make()
+                                ->title('Error')
+                                ->body('Satuan ini masih digunakan pada tabel Barang.')
+                                ->danger()
+                                ->duration(4000)
+                                ->send();
+                            $action->cancel();
+                            return;
+                        }
+                    }),
+            ]);
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => ManageSatuans::route('/'),
+        ];
+    }
+}
