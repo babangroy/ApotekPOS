@@ -20,18 +20,31 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Grouping\Group;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
+use UnitEnum;
 
 class KonversiResource extends Resource
 {
     protected static ?string $model = Konversi::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static ?string $modelLabel = 'Konversi Satuan';
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowsRightLeft;
+
+    protected static string | UnitEnum | null $navigationGroup = 'Produk';
 
     protected static ?string $cluster = MasterCluster::class;
 
     protected static ?string $recordTitleAttribute = 'barang_id';
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->with(['barang.merek', 'satuan']);
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -39,11 +52,39 @@ class KonversiResource extends Resource
             ->components([
                 Select::make('barang_id')
                     ->label('Nama Barang')
-                    ->options(Barang::query()->pluck('nama', 'id'))
-                    ->native(false)
+                    ->options(
+                        Barang::query()
+                            ->with('merek')
+                            ->orderBy('nama')
+                            ->limit(50)
+                            ->get()
+                            ->mapWithKeys(fn ($barang) => [
+                                $barang->id => "{$barang->nama} - Merek: {$barang->merek->nama}",
+                            ])
+                    )
                     ->preload()
                     ->searchable()
+                    ->getSearchResultsUsing(fn (string $search) =>
+                        Barang::query()
+                            ->with('merek')
+                            ->where('nama', 'like', "%{$search}%")
+                            ->orWhereHas('merek', fn ($q) => $q->where('nama', 'like', "%{$search}%"))
+                            ->limit(30)
+                            ->get()
+                            ->mapWithKeys(fn ($barang) => [
+                                $barang->id => "{$barang->nama} - Merek: {$barang->merek->nama}",
+                            ])
+                    )
                     ->required()
+
+                    ->rule(function ($operation) {
+                        return $operation === 'create'
+                            ? 'unique:konversis,barang_id'
+                            : null;
+                    })
+                    ->validationMessages([
+                        'unique' => 'Konversi untuk barang tersebut sudah ada'
+                    ])
                     ->columnSpanFull()
                     ->live()
                     ->afterStateUpdated(function ($state, callable $set) {
@@ -57,7 +98,7 @@ class KonversiResource extends Resource
                             [
                                 'satuan_id' => $barang->satuan_id,
                                 'konversi_ke_satuan_terkecil' => 1,
-                                'is_default' => true,
+                                'satuan_utama' => true,
                             ]
                         ]);
                     })
@@ -77,9 +118,12 @@ class KonversiResource extends Resource
                         Select::make('satuan_id')
                             ->options(Satuan::query()->pluck('nama', 'id'))
                             ->preload()
+                            ->searchable()
                             ->required()
+                            ->distinct()
                             ->validationMessages([
-                                'required' => 'Satuan harus di pilih'
+                                'required' => 'Satuan harus di pilih',
+                                'distinct' => 'Satuan tidak boleh sama'
                             ]),
 
                         TextInput::make('konversi_ke_satuan_terkecil')
@@ -92,19 +136,16 @@ class KonversiResource extends Resource
                                 'minValue' => 'Jumlah tidak bolen kurang dari 1'
                             ]),
 
-                        Toggle::make('is_default')
-                            // ->default(false)
+                        Toggle::make('satuan_utama')
+                            ->label('Satuan utama')
                             ->distinct()
-                            ->validationMessages([
-                                'distinct' => 'Pilih hanya 1 satuan utama'
-                            ]),
                     ])
-                    ->defaultItems(1)
+                    ->defaultItems(0)
+                    ->reorderable(false)
                     ->addActionLabel('Tambah Konversi')
                     ->minItems(1)
                     ->validationMessages([
                         'min' => 'Konversi tidak boleh kosong',
-                        'distinct' => 'Pilih hanya 1 satuan utama'
                     ])
             ]);
     }
@@ -114,15 +155,24 @@ class KonversiResource extends Resource
         return $table
             ->recordTitleAttribute('barang_id')
             ->columns([
-                TextColumn::make('no')
-                    ->label('No.')
-                    ->rowIndex()
-                    ->width('70px')
-                    ->alignCenter(),
-
                 TextColumn::make('barang.nama')
-                    ->numeric()
-                    ->sortable(),
+                    ->label('Barang')
+                    ->getStateUsing(function ($record) {
+                        if (! $record->barang) {
+                            return '-';
+                        }
+
+                        $nama = $record->barang->nama ?? '-';
+                        $merek = $record->barang->merek->nama ?? '-';
+
+                        return $nama . ' (' . $merek . ')';
+                    })
+                    ->searchable(query: function (Builder $query, string $search) {
+                        $query->whereHas('barang', function ($q) use ($search) {
+                            $q->where('nama', 'like', "%{$search}%")
+                            ->orWhereHas('merek', fn ($m) => $m->where('nama', 'like', "%{$search}%"));
+                        });
+                    }),
 
                 TextColumn::make('satuan.nama')
                     ->numeric()
@@ -130,16 +180,28 @@ class KonversiResource extends Resource
 
                 TextColumn::make('konversi_ke_satuan_terkecil')
                     ->numeric()
-                    ->sortable(),
+                    ->alignCenter(),
 
-                TextColumn::make('urutan')
-                    ->numeric()
-                    ->sortable(),
-
-                IconColumn::make('is_default')
+                IconColumn::make('satuan_utama')
                     ->label('Satuan utama?')
-                    ->boolean(),
+                    ->boolean()
+                    ->alignCenter(),
             ])
+            ->groups([
+                Group::make('barang.nama')
+                ->label('Nama Barang')
+                ->getTitleFromRecordUsing(function (Konversi $record) {
+                    $namaBarang = $record->barang->nama ?? '-';
+                    $merek = $record->barang->merek->nama ?? '-';
+
+                    return "{$namaBarang}, Merek: {$merek}";
+                })
+                    ->collapsible(),
+            ])
+            ->defaultGroup('barang.nama')
+            ->collapsedGroupsByDefault()
+            ->groupingSettingsHidden()
+
             ->filters([
                 //
             ])
@@ -147,37 +209,48 @@ class KonversiResource extends Resource
                 EditAction::make()
                     ->modalWidth('3xl')
                     ->using(function (Konversi $record, array $data) {
-                        Konversi::where('barang_id', $record->barang_id)->delete();
+                        return DB::transaction(function () use ($data, $record) {
+                            $barangId = $data['barang_id'];
+                            $konversiItems = $data['konversi_items'] ?? [];
 
-                        $barangId = $data['barang_id'];
-                        $konversiItems = $data['konversi_items'] ?? [];
+                            $existing = Konversi::where('barang_id', $barangId)->get();
+                            $updatedIds = [];
 
-                        foreach ($konversiItems as $index => $item) {
-                            Konversi::create([
-                                'barang_id' => $barangId,
-                                'satuan_id' => $item['satuan_id'],
-                                'konversi_ke_satuan_terkecil' => $item['konversi_ke_satuan_terkecil'],
-                                'is_default' => $item['is_default'] ?? false,
-                                'urutan' => $index + 1,
-                            ]);
-                        }
+                            foreach ($konversiItems as $index => $item) {
+                                $existingRecord = $existing->firstWhere('satuan_id', $item['satuan_id']);
 
-                        return $record;
+                                $payload = [
+                                    'barang_id' => $barangId,
+                                    'satuan_id' => $item['satuan_id'],
+                                    'konversi_ke_satuan_terkecil' => $item['konversi_ke_satuan_terkecil'],
+                                    'satuan_utama' => $item['satuan_utama'] ?? false,
+                                    'urutan' => $index + 1,
+                                ];
+
+                                if ($existingRecord) {
+                                    $existingRecord->update($payload);
+                                    $updatedIds[] = $existingRecord->id;
+                                } else {
+                                    $new = Konversi::create($payload);
+                                    $updatedIds[] = $new->id;
+                                }
+                            }
+
+                            Konversi::where('barang_id', $barangId)
+                                ->whereNotIn('id', $updatedIds)
+                                ->delete();
+
+                            return $record->refresh();
+                        });
                     })
                     ->fillForm(function (Konversi $record) {
-                        $allKonversi = Konversi::where('barang_id', $record->barang_id)->get();
-
-                        $konversiItems = $allKonversi->map(function ($item) {
-                            return [
-                                'satuan_id' => $item->satuan_id,
-                                'konversi_ke_satuan_terkecil' => $item->konversi_ke_satuan_terkecil,
-                                'is_default' => $item->is_default,
-                            ];
-                        })->toArray();
+                        $konversi = Konversi::where('barang_id', $record->barang_id)
+                            ->orderBy('urutan')
+                            ->get(['satuan_id', 'konversi_ke_satuan_terkecil', 'satuan_utama']);
 
                         return [
                             'barang_id' => $record->barang_id,
-                            'konversi_items' => $konversiItems,
+                            'konversi_items' => $konversi->toArray(),
                         ];
                     }),
 

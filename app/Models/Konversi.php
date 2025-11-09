@@ -14,7 +14,7 @@ class Konversi extends Model
         'satuan_id',
         'konversi_ke_satuan_terkecil',
         'urutan',
-        'is_default',
+        'satuan_utama',
     ];
 
     public function barang()

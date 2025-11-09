@@ -41,7 +41,12 @@ class Barang extends Model
 
     public function pabrikan()
     {
-        return $this->belongsTo(pabrikan::class);
+        return $this->belongsTo(Pabrikan::class);
+    }
+
+    public function konversis()
+    {
+        return $this->hasMany(Konversi::class);
     }
 
     protected static function booted()

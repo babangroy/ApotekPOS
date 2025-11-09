@@ -27,7 +27,7 @@ class ManageKonversis extends ManageRecords
                             'barang_id' => $barangId,
                             'satuan_id' => $item['satuan_id'],
                             'konversi_ke_satuan_terkecil' => $item['konversi_ke_satuan_terkecil'],
-                            'is_default' => $item['is_default'] ?? false,
+                            'satuan_utama' => $item['satuan_utama'] ?? false,
                             'urutan' => $index + 1,
                         ]);
                     }
