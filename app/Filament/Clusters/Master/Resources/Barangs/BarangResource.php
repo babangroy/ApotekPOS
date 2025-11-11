@@ -216,8 +216,12 @@ class BarangResource extends Resource
             ])
             ->recordActions([
                 EditAction::make()
+                    ->iconButton()
+                    ->tooltip('Ubah data')
                     ->modalWidth('3xl'),
-                DeleteAction::make(),
+                DeleteAction::make()
+                    ->iconButton()
+                    ->tooltip('Hapus data'),
             ]);
     }
 

@@ -66,8 +66,12 @@ class KategoriResource extends Resource
             ])
             ->recordActions([
                 EditAction::make()
+                    ->iconButton()
+                    ->tooltip('Ubah data')
                     ->modalWidth('md'),
                 DeleteAction::make()
+                    ->iconButton()
+                    ->tooltip('Hapus data')
                     ->before(function (Kategori $record, DeleteAction $action) {
                         if ($record->barangs()->exists()) {
                             Notification::make()

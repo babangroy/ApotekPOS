@@ -15,6 +15,7 @@ class ManageKonversis extends ManageRecords
     {
         return [
             CreateAction::make()
+                ->label('Tambah Konversi')
                 ->modalWidth('3xl')
                 ->using(function (array $data) {
                     $barangId = $data['barang_id'];

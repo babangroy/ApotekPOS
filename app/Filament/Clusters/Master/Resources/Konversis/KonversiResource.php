@@ -16,6 +16,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
@@ -24,6 +25,7 @@ use Filament\Tables\Grouping\Group;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\HtmlString;
 use UnitEnum;
 
 class KonversiResource extends Resource
@@ -50,6 +52,16 @@ class KonversiResource extends Resource
     {
         return $schema
             ->components([
+Section::make('Penjelasan')
+    ->description(new HtmlString('
+        <strong>Misalnya:</strong> Paracetamol 500 mg memiliki 3 satuan:<br>
+        - Tablet Jumlah 1<br>
+        - Strip Jumlah 10<br>
+        - Box Jumlah 10<br>
+        <strong>Maka:</strong> 1 Box = 10 Strip = 100 Tablet
+    '))
+    ->columnSpanFull(),
+
                 Select::make('barang_id')
                     ->label('Nama Barang')
                     ->options(
@@ -76,14 +88,14 @@ class KonversiResource extends Resource
                             ])
                     )
                     ->required()
-
                     ->rule(function ($operation) {
                         return $operation === 'create'
                             ? 'unique:konversis,barang_id'
                             : null;
                     })
                     ->validationMessages([
-                        'unique' => 'Konversi untuk barang tersebut sudah ada'
+                        'unique' => 'Konversi untuk barang tersebut sudah ada',
+                        'required' => 'Nama barang wajib dipilih'
                     ])
                     ->columnSpanFull()
                     ->live()
@@ -133,7 +145,7 @@ class KonversiResource extends Resource
                             ->minValue(1)
                             ->validationMessages([
                                 'required' => 'Jumlah konversi harus di isi',
-                                'minValue' => 'Jumlah tidak bolen kurang dari 1'
+                                'min' => 'Jumlah tidak bolen kurang dari 1'
                             ]),
 
                         Toggle::make('satuan_utama')
@@ -154,7 +166,7 @@ class KonversiResource extends Resource
     {
         return $table
             ->recordTitleAttribute('barang_id')
-            ->columns([
+            ->columns([     
                 TextColumn::make('barang.nama')
                     ->label('Barang')
                     ->getStateUsing(function ($record) {
@@ -201,13 +213,17 @@ class KonversiResource extends Resource
             ->defaultGroup('barang.nama')
             ->collapsedGroupsByDefault()
             ->groupingSettingsHidden()
+            ->defaultPaginationPageOption(50)
 
             ->filters([
                 //
             ])
             ->recordActions([
                 EditAction::make()
+                    ->iconButton()
+                    ->tooltip('Ubah data')
                     ->modalWidth('3xl')
+                    ->modalHeading('Ubah Konversi Satuan')
                     ->using(function (Konversi $record, array $data) {
                         return DB::transaction(function () use ($data, $record) {
                             $barangId = $data['barang_id'];
@@ -254,7 +270,10 @@ class KonversiResource extends Resource
                         ];
                     }),
 
-                DeleteAction::make(),
+                DeleteAction::make()
+                    ->modalHeading('Hapus Konversi')
+                    ->iconButton()
+                    ->tooltip('Hapus data'),
             ]);
     }
 

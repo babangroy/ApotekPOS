@@ -66,8 +66,12 @@ class MerekResource extends Resource
             ])
             ->recordActions([
                 EditAction::make()
+                    ->iconButton()
+                    ->tooltip('Ubah data')
                     ->modalWidth('md'),
                 DeleteAction::make()
+                    ->iconButton()
+                    ->tooltip('Hapus data')
                     ->before(function (Merek $record, DeleteAction $action) {
                         if ($record->barangs()->exists()) {
                             Notification::make()

@@ -6,9 +6,7 @@ use App\Filament\Clusters\Master\MasterCluster;
 use App\Filament\Clusters\Master\Resources\Suppliers\Pages\ManageSuppliers;
 use App\Models\Supplier;
 use BackedEnum;
-use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -86,8 +84,12 @@ class SupplierResource extends Resource
             ])
             ->recordActions([
                 EditAction::make()
+                    ->iconButton()
+                    ->tooltip('Ubah data')
                     ->modalWidth('md'),
-                DeleteAction::make(),
+                DeleteAction::make()
+                    ->iconButton()
+                    ->tooltip('Hapus data'),
             ]);
     }
 

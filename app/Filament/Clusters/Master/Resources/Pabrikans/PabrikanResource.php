@@ -9,6 +9,7 @@ use BackedEnum;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -65,8 +66,24 @@ class PabrikanResource extends Resource
             ])
             ->recordActions([
                 EditAction::make()
+                    ->iconButton()
+                    ->tooltip('Ubah data')
                     ->modalWidth('md'),
-                DeleteAction::make(),
+                DeleteAction::make()
+                    ->iconButton()
+                    ->tooltip('Hapus data')
+                    ->before(function (Pabrikan $record, DeleteAction $action) {
+                        if ($record->barangs()->exists()) {
+                            Notification::make()
+                                ->title('Error')
+                                ->body('Pabrikan ini masih digunakan pada tabel Barang.')
+                                ->danger()
+                                ->duration(4000)
+                                ->send();
+                            $action->cancel();
+                            return;
+                        }
+                    }),
             ]);
     }
 
