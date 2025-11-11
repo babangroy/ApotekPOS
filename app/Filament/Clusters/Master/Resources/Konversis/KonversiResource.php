@@ -145,7 +145,7 @@ Section::make('Penjelasan')
                             ->minValue(1)
                             ->validationMessages([
                                 'required' => 'Jumlah konversi harus di isi',
-                                'min' => 'Jumlah tidak bolen kurang dari 1'
+                                'min' => 'Jumlah tidak boleh kurang dari 1'
                             ]),
 
                         Toggle::make('satuan_utama')
@@ -222,7 +222,7 @@ Section::make('Penjelasan')
                 EditAction::make()
                     ->iconButton()
                     ->tooltip('Ubah data')
-                    ->modalWidth('3xl')
+                    ->modalWidth('2xl')
                     ->modalHeading('Ubah Konversi Satuan')
                     ->using(function (Konversi $record, array $data) {
                         return DB::transaction(function () use ($data, $record) {

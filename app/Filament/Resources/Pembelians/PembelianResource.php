@@ -15,12 +15,15 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use UnitEnum;
 
 class PembelianResource extends Resource
 {
     protected static ?string $model = Pembelian::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShoppingBag;
+
+    protected static string | UnitEnum | null $navigationGroup = 'Transaksi';
 
     protected static ?string $recordTitleAttribute = 'kode';
 
@@ -52,7 +55,7 @@ class PembelianResource extends Resource
             'index' => ListPembelians::route('/'),
             'create' => CreatePembelian::route('/create'),
             'view' => ViewPembelian::route('/{record}'),
-            'edit' => EditPembelian::route('/{record}/edit'),
+            // 'edit' => EditPembelian::route('/{record}/edit'),
         ];
     }
 }
