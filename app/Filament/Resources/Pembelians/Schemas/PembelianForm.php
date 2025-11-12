@@ -82,7 +82,7 @@ class PembelianForm
                 ->label('Detail Barang')
                 ->table([
                     TableColumn::make('Nama Barang'),
-                    TableColumn::make('Batch')->width('200px'),
+                    TableColumn::make('Batch')->width('150px'),
                     TableColumn::make('Exp.')->width('160px'),
                     TableColumn::make('Satuan')->width('150px'),
                     TableColumn::make('Jumlah')->width('90px'),
@@ -121,7 +121,8 @@ class PembelianForm
 
                     Select::make('satuan_id')
                         ->options(Satuan::query()->pluck('nama', 'id'))
-                        ->placeholder('Pilih satuan')
+                        ->searchable()
+                        ->placeholder('Pilih')
                         ->required()
                         ->validationMessages([
                             'required' => 'Satuan wajib di pilih'

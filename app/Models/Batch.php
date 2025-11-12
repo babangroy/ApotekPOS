@@ -16,6 +16,7 @@ class Batch extends Model
         'pembelian_id',
         'supplier_id',
         'tgl_kadaluarsa',
+        'jumlah',
         'jlh_tersedia',
         'harga_beli_satuan',
         'status',

@@ -64,6 +64,7 @@ class AdminPanelProvider extends PanelProvider
                 Authenticate::class,
             ])
             ->maxContentWidth(Width::Full)
+            ->sidebarWidth('17rem')
             ->spa();
     }
 }

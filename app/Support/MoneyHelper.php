@@ -20,8 +20,6 @@ class MoneyHelper
 public static function format($value, int $decimals = 0): string
 {
     $number = (float) $value;
-    
-    // Untuk currency, biasanya mau tetap ada pemisah ribuan meski angka bulat
     return number_format($number, $decimals, ',', '.');
 }
 }
