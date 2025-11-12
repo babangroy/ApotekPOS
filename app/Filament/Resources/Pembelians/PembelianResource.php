@@ -29,8 +29,9 @@ class PembelianResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return PembelianForm::configure($schema);
+        return (new PembelianForm())->configure($schema);
     }
+
 
     public static function infolist(Schema $schema): Schema
     {
