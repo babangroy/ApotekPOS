@@ -3,8 +3,10 @@
 namespace App\Filament\Resources\Pembelians\Pages;
 
 use App\Filament\Resources\Pembelians\PembelianResource;
-use Filament\Actions\EditAction;
+use Filament\Actions\Action;
 use Filament\Resources\Pages\ViewRecord;
+use Filament\Support\Colors\Color;
+use Filament\Support\Icons\Heroicon;
 
 class ViewPembelian extends ViewRecord
 {
@@ -13,7 +15,10 @@ class ViewPembelian extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            // EditAction::make(),
+            Action::make('back')
+                ->label('Kembali')
+                ->icon(Heroicon::ArrowUturnLeft)
+                ->url(static::$resource::getUrl('index'))
         ];
     }
 }

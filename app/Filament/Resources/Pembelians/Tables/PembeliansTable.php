@@ -14,41 +14,55 @@ class PembeliansTable
         return $table
             ->columns([
                 TextColumn::make('kode')
-                    ->searchable(),
+                    ->label('Kode Pembelian')
+                    ->searchable()
+                    ->sortable(),
+
                 TextColumn::make('no_faktur')
+                    ->label('No Faktur')
                     ->searchable(),
-                TextColumn::make('supplier_id')
-                    ->numeric()
-                    ->sortable(),
+
+                TextColumn::make('supplier.nama')
+                    ->label('Supplier'),
+
                 TextColumn::make('tgl_pembelian')
-                    ->date()
+                    ->label('Tgl Pembelian')
+                    ->date('d M Y')
                     ->sortable(),
-                TextColumn::make('tgl_jth_tempo')
-                    ->date()
-                    ->sortable(),
+
                 TextColumn::make('status_pembayaran')
-                    ->badge(),
+                    ->label('Status')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'Lunas' => 'success',
+                        'Dp' => 'gray',
+                        'Belum Bayar' => 'danger',
+                        'Sebagian' => 'warning',
+                    }),
+
+                TextColumn::make('tgl_jth_tempo')
+                    ->label('Jatuh Tempo')
+                    ->date('d M Y')
+                    ->sortable(),
+
                 TextColumn::make('subtotal')
-                    ->numeric()
-                    ->sortable(),
+                    ->label('Subtotal')
+                    ->money('IDR'),
+
                 TextColumn::make('diskon')
-                    ->numeric()
-                    ->sortable(),
+                    ->label('Diskon')
+                    ->money('IDR'),
+
                 TextColumn::make('ppn')
-                    ->numeric()
-                    ->sortable(),
+                    ->label('PPN')
+                    ->formatStateUsing(fn ($state) => $state . '%'),
+
                 TextColumn::make('total_akhir')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('oleh')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('updated_at')
-                    ->dateTime()
+                    ->label('Grand Total')
+                    ->money('IDR'),
+
+                TextColumn::make('creator.name')
+                    ->label('Oleh')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
@@ -56,8 +70,8 @@ class PembeliansTable
                 //
             ])
             ->recordActions([
-                ViewAction::make(),
-                EditAction::make(),
+                ViewAction::make()
+                    ->iconButton(),
             ]);
     }
 }

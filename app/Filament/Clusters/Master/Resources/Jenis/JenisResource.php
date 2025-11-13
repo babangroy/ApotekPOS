@@ -69,6 +69,7 @@ class JenisResource extends Resource
                     ->iconButton()
                     ->tooltip('Ubah data')
                     ->modalWidth('md'),
+                    
                 DeleteAction::make()
                     ->iconButton()
                     ->tooltip('Hapus data')

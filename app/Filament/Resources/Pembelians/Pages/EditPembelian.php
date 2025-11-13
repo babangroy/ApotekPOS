@@ -15,7 +15,6 @@ class EditPembelian extends EditRecord
     {
         return [
             ViewAction::make(),
-            // DeleteAction::make(),
         ];
     }
 }

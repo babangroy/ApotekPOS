@@ -8,6 +8,7 @@ use App\Models\HistoriStok;
 use App\Models\Pembelian;
 use App\Models\PembelianDetail;
 use Carbon\Carbon;
+use Filament\Actions\Action;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
@@ -17,6 +18,8 @@ use Illuminate\Support\Str;
 class CreatePembelian extends CreateRecord
 {
     protected static string $resource = PembelianResource::class;
+
+    protected static bool $canCreateAnother = false;
 
     protected function handleRecordCreation(array $data): Model
     {
@@ -33,7 +36,7 @@ class CreatePembelian extends CreateRecord
             $newNumber = $lastKode
                 ? str_pad(((int) Str::substr($lastKode, -4)) + 1, 4, '0', STR_PAD_LEFT)
                 : '0001';
-
+ 
             $data['kode'] = $prefix . $newNumber;
 
             // ========== Simpan Data Pembelian ==========
@@ -44,10 +47,10 @@ class CreatePembelian extends CreateRecord
                 'tgl_pembelian' => $data['tgl_pembelian'],
                 'tgl_jth_tempo' => $data['tgl_jth_tempo'] ?? null,
                 'status_pembayaran' => $data['status_pembayaran'],
-                'subtotal' => $data['subtotal'] ?? 0,
+                'subtotal' => $data['subtotal'],
                 'diskon' => $data['diskon'] ?? 0,
                 'ppn' => $data['ppn'] ?? 0,
-                'total_akhir' => $data['total_akhir'] ?? 0,
+                'total_akhir' => $data['total_akhir'],
                 'catatan' => $data['catatan'] ?? null,
                 'oleh' => Auth::id(),
             ]);
@@ -120,5 +123,4 @@ class CreatePembelian extends CreateRecord
     {
         return $this->getResource()::getUrl('index');
     }
-
 }

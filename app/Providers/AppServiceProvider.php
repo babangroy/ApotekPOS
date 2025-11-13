@@ -2,9 +2,9 @@
 
 namespace App\Providers;
 
-use Filament\Actions\ButtonAction;
-use Filament\Actions\EditAction;
+use Filament\Actions\CreateAction;
 use Filament\Forms\Components\TextInput;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Support\ServiceProvider;
 
@@ -33,6 +33,12 @@ class AppServiceProvider extends ServiceProvider
                 ->recordActionsColumnLabel('Aksi')
                 ->recordActionsAlignment('end');
                 
+        });
+
+        CreateAction::configureUsing(function (CreateAction $action) {
+            $action
+                ->label('Tambah')
+                ->icon(Heroicon::Plus);
         });
         
     }

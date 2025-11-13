@@ -30,7 +30,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::Teal,
             ])
             ->brandLogo(asset('images/logo-light.png'))
             ->darkModeBrandLogo(asset('images/logo-dark.png'))

@@ -34,4 +34,10 @@ class Pembelian extends Model
     {
         return $this->hasMany(PembelianDetail::class, 'pembelian_id');
     }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'oleh', 'id');
+    }
+
 }

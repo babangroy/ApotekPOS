@@ -2,8 +2,11 @@
 
 namespace App\Filament\Resources\Pembelians\Schemas;
 
+use Filament\Infolists\Components\RepeatableEntry;
+use Filament\Infolists\Components\RepeatableEntry\TableColumn;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\Alignment;
 
 class PembelianInfolist
 {
@@ -11,38 +14,29 @@ class PembelianInfolist
     {
         return $schema
             ->components([
-                TextEntry::make('kode'),
-                TextEntry::make('no_faktur')
-                    ->placeholder('-'),
-                TextEntry::make('supplier_id')
-                    ->numeric(),
-                TextEntry::make('tgl_pembelian')
-                    ->date(),
-                TextEntry::make('tgl_jth_tempo')
-                    ->date()
-                    ->placeholder('-'),
-                TextEntry::make('status_pembayaran')
-                    ->badge(),
-                TextEntry::make('subtotal')
-                    ->numeric(),
-                TextEntry::make('diskon')
-                    ->numeric(),
-                TextEntry::make('ppn')
-                    ->numeric(),
-                TextEntry::make('total_akhir')
-                    ->numeric(),
-                TextEntry::make('catatan')
-                    ->placeholder('-')
+                RepeatableEntry::make('details')
+                    ->label('Detail Barang')
+                    ->table([
+                        TableColumn::make('Nama Barang')->alignment(Alignment::Center),
+                        TableColumn::make('Satuan')->alignment(Alignment::Center),
+                        TableColumn::make('Jumlah')->alignment(Alignment::Center),
+                        TableColumn::make('Harga')->alignment(Alignment::Center),
+                        TableColumn::make('Sub Total')->alignment(Alignment::Center),
+                        TableColumn::make('Diskon')->alignment(Alignment::Center),
+                        TableColumn::make('PPN')->alignment(Alignment::Center),
+                        TableColumn::make('Total Akhir')->alignment(Alignment::Center),
+                    ])
+                    ->schema([
+                        TextEntry::make('barang.nama'),
+                        TextEntry::make('satuan.nama')->alignCenter(),
+                        TextEntry::make('jumlah')->alignCenter(),
+                        TextEntry::make('harga')->money('IDR')->alignEnd(),
+                        TextEntry::make('sub_total')->money('IDR')->alignEnd(),
+                        TextEntry::make('diskon')->money('IDR')->alignEnd(),
+                        TextEntry::make('ppn')->money('IDR')->alignEnd(),
+                        TextEntry::make('total_akhir')->money('IDR')->alignEnd(),
+                    ])
                     ->columnSpanFull(),
-                TextEntry::make('oleh')
-                    ->numeric()
-                    ->placeholder('-'),
-                TextEntry::make('created_at')
-                    ->dateTime()
-                    ->placeholder('-'),
-                TextEntry::make('updated_at')
-                    ->dateTime()
-                    ->placeholder('-'),
             ]);
     }
 }
