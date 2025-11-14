@@ -13,24 +13,13 @@ return new class extends Migration
     {
         Schema::create('histori_stoks', function (Blueprint $table) {
             $table->id();
-
-            $table->foreignId('barang_id')
-                ->constrained('barangs')
-                ->restrictOnDelete();
-
-            $table->foreignId('batch_id')
-                ->constrained('batches')
-                ->restrictOnDelete();
-
-            $table->enum('referensi', ['Pembelian', 'Penjualan', 'SO', 'Penarikan'])
-                ->index();
-
+            $table->foreignId('barang_id')->constrained('barangs')->restrictOnDelete();
+            $table->foreignId('batch_id')->constrained('batches')->restrictOnDelete();
+            $table->enum('referensi', ['Pembelian', 'Penjualan', 'SO', 'Penarikan'])->index();
             $table->unsignedBigInteger('id_referensi')->nullable();
-
             $table->decimal('jlh_sebelum', 15, 2)->default(0);
             $table->decimal('jlh_perubahan', 15, 2)->default(0);
             $table->decimal('jlh_setelah', 15, 2)->default(0);
-
             $table->timestamps();
         });
     }

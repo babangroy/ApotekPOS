@@ -26,7 +26,7 @@ class PembelianInfolist
                         TableColumn::make('PPN')->alignment(Alignment::Center),
                         TableColumn::make('Total Akhir')->alignment(Alignment::Center),
                     ])
-                    ->schema([
+                    ->schema([                      
                         TextEntry::make('barang.nama'),
                         TextEntry::make('satuan.nama')->alignCenter(),
                         TextEntry::make('jumlah')->alignCenter(),
