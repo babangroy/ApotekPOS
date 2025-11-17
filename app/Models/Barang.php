@@ -55,6 +55,11 @@ class Barang extends Model
         return $this->hasMany(Batch::class, 'barang_id');
     }
 
+    public function getNamaWithBrandAttribute()
+    {
+        return $this->nama . ' - ' . $this->merek?->nama;
+    }
+
     protected static function booted()
     {
         static::created(function (Barang $barang) {

@@ -74,7 +74,8 @@ class SupplierResource extends Resource
                     ->searchable(),
 
                 TextColumn::make('alamat')
-                    ->label('Alamat Supplier'),
+                    ->label('Alamat Supplier')
+                    ->limit(60),
 
                 TextColumn::make('no_telp')
                     ->label('No Telepon'),

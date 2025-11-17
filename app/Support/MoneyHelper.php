@@ -17,9 +17,9 @@ class MoneyHelper
         return floatval($clean) ?: 0.0;
     }
 
-public static function format($value, int $decimals = 0): string
-{
-    $number = (float) $value;
-    return number_format($number, $decimals, ',', '.');
-}
+// public static function format($value, int $decimals = 0): string
+// {
+//     $number = (float) $value;
+//     return number_format($number, $decimals, ',', '.');
+// }
 }

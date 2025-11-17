@@ -259,9 +259,8 @@ class PembelianForm
                         ->readOnly()
                         ->default(0)
                         ->dehydrated(false)
-                        ->formatStateUsing(fn ($state) => 
-                            MoneyHelper::format($state ?? 0, 0)
-                        ),
+                        ->mask(RawJs::make('$money($input)'))
+                        ->stripCharacters([',']),
                 ])
                 ->reorderable(false)
                 ->addActionLabel('Tambah Barang')
@@ -281,9 +280,8 @@ class PembelianForm
                         ->prefix('Rp')
                         ->numeric()
                         ->readOnly()
-                        ->formatStateUsing(fn ($state) =>
-                            MoneyHelper::format($state, 2)
-                        ),
+                        ->mask(RawJs::make('$money($input)'))
+                        ->stripCharacters([',']),
 
                     TextInput::make('diskon')
                         ->label('Diskon')
@@ -309,9 +307,8 @@ class PembelianForm
                         ->prefix('Rp')
                         ->numeric()
                         ->readOnly()
-                        ->formatStateUsing(fn ($state) =>
-                            MoneyHelper::format($state, 2)
-                        ),
+                        ->mask(RawJs::make('$money($input)'))
+                        ->stripCharacters([',']),
                 ])
                 ->columns(4)
                 ->columnSpanFull(),

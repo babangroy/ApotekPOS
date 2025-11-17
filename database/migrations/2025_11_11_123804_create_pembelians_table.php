@@ -15,27 +15,16 @@ return new class extends Migration
             $table->id();
             $table->string('kode')->unique()->index();
             $table->string('no_faktur')->nullable()->index();
-
-            $table->foreignId('supplier_id')
-                ->constrained('suppliers')
-                ->restrictOnDelete();
-
+            $table->foreignId('supplier_id')->constrained('suppliers')->restrictOnDelete();
             $table->date('tgl_pembelian')->index();
             $table->date('tgl_jth_tempo')->nullable();
-
-            $table->enum('status_pembayaran', ['Lunas', 'Dp', 'Belum Bayar', 'Sebagian'])
-                ->default('Belum Bayar')
-                ->index();
-
+            $table->enum('status_pembayaran', ['Lunas', 'Dp', 'Belum Bayar', 'Sebagian'])->default('Belum Bayar')->index();
             $table->decimal('subtotal', 15, 2)->default(0);
             $table->decimal('diskon', 15, 2)->default(0);
             $table->decimal('ppn', 15, 2)->default(0);
             $table->decimal('total_akhir', 15, 2)->default(0);
-
             $table->text('catatan')->nullable();
-
             $table->foreignId('oleh')->nullable()->constrained('users')->nullOnDelete();
-
             $table->timestamps();
         });
     }

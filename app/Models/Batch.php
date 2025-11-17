@@ -43,9 +43,11 @@ class Batch extends Model
         return $this->belongsTo(PembelianDetail::class);
     }
 
-    public function konversis()
-    {
-        return $this->belongsTo(Barang::class, 'barang_id')
-            ->with('konversis');
-    }
+    // public function konversis()
+    // {
+    //     return $this->belongsTo(Barang::class, 'barang_id')
+    //         ->with('konversis');
+    // }
+
+
 }

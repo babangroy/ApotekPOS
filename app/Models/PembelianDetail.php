@@ -36,4 +36,9 @@ class PembelianDetail extends Model
     {
         return $this->belongsTo(Satuan::class);
     }
+
+    public function getBarangNamaWithMerekAttribute(): string
+    {
+        return $this->barang?->nama . ' - ' . $this->barang?->merek?->nama;
+    }
 }

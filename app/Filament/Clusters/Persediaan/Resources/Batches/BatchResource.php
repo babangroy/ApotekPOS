@@ -4,7 +4,9 @@ namespace App\Filament\Clusters\Persediaan\Resources\Batches;
 
 use App\Filament\Clusters\Persediaan\PersediaanCluster;
 use App\Filament\Clusters\Persediaan\Resources\Batches\Pages\ManageBatches;
+use App\Models\Barang;
 use App\Models\Batch;
+use App\Models\Merek;
 use App\Services\StockConverterService;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -12,6 +14,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 class BatchResource extends Resource
@@ -38,6 +41,11 @@ class BatchResource extends Resource
             ]);
     }
 
+    protected function getTableQuery(): Builder
+    {
+        return parent::getTableQuery()->with(['barang.merek', 'supplier']);
+    }
+
     public static function table(Table $table): Table
     {
         return $table
@@ -50,8 +58,25 @@ class BatchResource extends Resource
 
                 TextColumn::make('barang.nama')
                     ->label('Nama Barang')
-                    ->sortable()
-                    ->searchable(),
+                    ->formatStateUsing(fn ($state, $record) => 
+                        $state . ' - ' . $record->barang?->merek?->nama
+                    )
+                    ->sortable(query: function (Builder $query, string $direction): Builder {
+                        return $query->orderBy(
+                            Barang::select('nama')
+                                ->whereColumn('id', 'batches.barang_id')
+                                ->limit(1),
+                            $direction
+                        );
+                    })
+                    ->searchable(query: function (Builder $query, string $search) {
+                        $query->whereHas('barang', function ($q) use ($search) {
+                            $q->where('nama', 'like', "%{$search}%")
+                            ->orWhereHas('merek', function ($q2) use ($search) {
+                                $q2->where('nama', 'like', "%{$search}%");
+                            });
+                        });
+                    }),
 
                 TextColumn::make('no_batch')
                     ->label('No Batch')
@@ -72,10 +97,16 @@ class BatchResource extends Resource
                         $converter = app(StockConverterService::class);
                         return $converter->formatAllUnits($record->barang_id, $state);
                     }),
-            ])
-            ->defaultSort('barang.nama', 'asc');
+                ])
+                ->defaultSort(function (Builder $query): Builder {
+                    return $query->orderBy(
+                        Barang::select('nama')
+                            ->whereColumn('id', 'batches.barang_id')
+                            ->limit(1),
+                        'asc'
+                    );
+                });
     }
-
 
     public static function getPages(): array
     {

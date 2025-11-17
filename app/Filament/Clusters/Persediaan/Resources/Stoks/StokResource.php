@@ -4,6 +4,7 @@ namespace App\Filament\Clusters\Persediaan\Resources\Stoks;
 
 use App\Filament\Clusters\Persediaan\PersediaanCluster;
 use App\Filament\Clusters\Persediaan\Resources\Stoks\Pages\ManageStoks;
+use App\Models\Barang;
 use App\Models\Batch;
 use App\Services\StockConverterService;
 use BackedEnum;
@@ -44,7 +45,6 @@ class StokResource extends Resource
     {
         return $table
             ->modifyQueryUsing(function (Builder $query) {
-
                 $subMin = DB::table('batches')
                     ->selectRaw('MIN(id) AS id, barang_id')
                     ->groupBy('barang_id');
@@ -56,7 +56,7 @@ class StokResource extends Resource
                 return $query
                     ->joinSub($subMin, 'm', 'batches.id', '=', 'm.id')
                     ->leftJoinSub($subSum, 's', 'batches.barang_id', '=', 's.barang_id')
-                    ->with(['barang'])
+                    ->with(['barang.merek', 'supplier'])
                     ->select('batches.*', 's.total_stok');
             })
             ->defaultKeySort(false)
@@ -69,17 +69,42 @@ class StokResource extends Resource
 
                 TextColumn::make('barang.nama')
                     ->label('Nama Barang')
-                    ->sortable()
-                    ->searchable(),
+                    ->formatStateUsing(fn ($state, $record) => 
+                        $state . ' - ' . $record->barang?->merek?->nama
+                    )
+                    ->sortable(query: function (Builder $query, string $direction): Builder {
+                        return $query->orderBy(
+                            Barang::select('nama')
+                                ->whereColumn('id', 'batches.barang_id')
+                                ->limit(1),
+                            $direction
+                        );
+                    })
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->whereHas('barang', function ($q) use ($search) {
+                            $q->where('nama', 'like', "%{$search}%")
+                              ->orWhereHas('merek', function ($q2) use ($search) {
+                                  $q2->where('nama', 'like', "%{$search}%");
+                              });
+                        });
+                    }),
 
                 TextColumn::make('total_stok')
                     ->label('Stok Tersedia')
                     ->formatStateUsing(function ($state, $record) {
                         $converter = app(StockConverterService::class);
                         return $converter->formatAllUnits($record->barang_id, $state);
-                    }),
+                    })
+                    ->sortable(),
             ])
-            ->defaultSort('barang.nama', 'asc');
+            ->defaultSort(function (Builder $query): Builder {
+                return $query->orderBy(
+                    Barang::select('nama')
+                        ->whereColumn('id', 'batches.barang_id')
+                        ->limit(1),
+                    'asc'
+                );
+            });
     }
 
     public static function getPages(): array

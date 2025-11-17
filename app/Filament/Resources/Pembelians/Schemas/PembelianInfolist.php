@@ -27,7 +27,7 @@ class PembelianInfolist
                         TableColumn::make('Total Akhir')->alignment(Alignment::Center),
                     ])
                     ->schema([                      
-                        TextEntry::make('barang.nama'),
+                        TextEntry::make('barang_nama_with_merek'),
                         TextEntry::make('satuan.nama')->alignCenter(),
                         TextEntry::make('jumlah')->alignCenter(),
                         TextEntry::make('harga')->money('IDR')->alignEnd(),
