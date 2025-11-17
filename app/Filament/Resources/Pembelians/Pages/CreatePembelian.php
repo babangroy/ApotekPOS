@@ -7,8 +7,8 @@ use App\Models\Batch;
 use App\Models\HistoriStok;
 use App\Models\Pembelian;
 use App\Models\PembelianDetail;
+use App\Services\StockConverterService;
 use Carbon\Carbon;
-use Filament\Actions\Action;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
@@ -24,6 +24,8 @@ class CreatePembelian extends CreateRecord
     protected function handleRecordCreation(array $data): Model
     {
         return DB::transaction(function () use ($data) {
+            // ========== Inisialisasi Stock Converter ==========
+            $stockConverter = new StockConverterService();
 
             // ========== Generate Kode Otomatis ==========
             $today = Carbon::now()->format('dmY');
@@ -69,12 +71,20 @@ class CreatePembelian extends CreateRecord
                 $ppnPerItem = ($subTotal - $diskonPerItem) * ($totalPPN / 100);
                 $totalAkhir = $subTotal - $diskonPerItem + $ppnPerItem;
 
+                // ✅ KONVERSI KE SATUAN TERKECIL
+                $jumlahTerkecil = $stockConverter->convertToSmallestUnit(
+                    $detail['barang_id'],
+                    $detail['satuan_id'], 
+                    $detail['jumlah']
+                );
+
                 // Simpan detail pembelian
                 $detailRecord = PembelianDetail::create([
                     'pembelian_id' => $pembelian->id,
                     'barang_id' => $detail['barang_id'],
                     'satuan_id' => $detail['satuan_id'],
-                    'jumlah' => $detail['jumlah'],
+                    'jumlah' => $detail['jumlah'], // Jumlah asli (input user)
+                    'jumlah_terkecil' => $jumlahTerkecil, // ✅ Jumlah setelah konversi
                     'harga' => $detail['harga'],
                     'sub_total' => $subTotal,
                     'diskon' => $diskonPerItem,
@@ -82,26 +92,28 @@ class CreatePembelian extends CreateRecord
                     'total_akhir' => $totalAkhir,
                 ]);
 
-                // Simpan batch baru
+                // ✅ SIMPAN BATCH DALAM SATUAN TERKECIL
                 $batch = Batch::create([
                     'no_batch' => $detail['no_batch'] ?? null,
                     'barang_id' => $detail['barang_id'],
                     'sumber' => 'Pembelian',
                     'pembelian_id' => $pembelian->id,
+                    'pembelian_detail_id' => $detailRecord->id,
                     'supplier_id' => $pembelian->supplier_id,
                     'tgl_kadaluarsa' => $detail['tgl_kadaluarsa'] ?? null,
-                    'jumlah' => $detail['jumlah'],
-                    'jlh_tersedia' => $detail['jumlah'],
+                    'jumlah' => $jumlahTerkecil, // ✅ DALAM SATUAN TERKECIL
+                    'jlh_tersedia' => $jumlahTerkecil, // ✅ DALAM SATUAN TERKECIL
                     'harga_beli_satuan' => $detail['harga'],
+                    'status' => 'Tersedia', // ← JANGAN LUPA STATUS
                 ]);
 
-                // Simpan histori stok
+                // ✅ HISTORI STOK DALAM SATUAN TERKECIL
                 $lastHistori = HistoriStok::where('barang_id', $detail['barang_id'])
                     ->latest('id')
                     ->first();
 
                 $jlhSebelum = $lastHistori?->jlh_setelah ?? 0;
-                $jlhPerubahan = $detail['jumlah'];
+                $jlhPerubahan = $jumlahTerkecil; // ✅ GUNAKAN JUMLAH TERKECIL
                 $jlhSetelah = $jlhSebelum + $jlhPerubahan;
 
                 HistoriStok::create([
@@ -112,6 +124,7 @@ class CreatePembelian extends CreateRecord
                     'jlh_sebelum' => $jlhSebelum,
                     'jlh_perubahan' => $jlhPerubahan,
                     'jlh_setelah' => $jlhSetelah,
+                    'keterangan' => "Pembelian {$pembelian->kode} - Batch: {$batch->no_batch}",
                 ]);
             }
 

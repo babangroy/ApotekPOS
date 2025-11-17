@@ -13,6 +13,12 @@ class PembeliansTable
     {
         return $table
             ->columns([
+                TextColumn::make('no')
+                    ->label('No.')
+                    ->rowIndex()
+                    ->width('70px')
+                    ->alignCenter(),
+
                 TextColumn::make('kode')
                     ->label('Kode Pembelian')
                     ->searchable()

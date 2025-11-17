@@ -3,6 +3,11 @@
 namespace App\Filament\Resources\Pembelians\Schemas;
 
 use App\Models\Barang;
+use App\Models\Jenis;
+use App\Models\Kategori;
+use App\Models\Konversi;
+use App\Models\Merek;
+use App\Models\Pabrikan;
 use App\Models\Satuan;
 use App\Support\MoneyHelper;
 use Filament\Forms\Components\DatePicker;
@@ -11,6 +16,7 @@ use Filament\Forms\Components\Repeater\TableColumn;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
@@ -92,9 +98,12 @@ class PembelianForm
                 ->schema([
                     Select::make('barang_id')
                         ->label('Nama Barang')
+                        ->searchable()
                         ->options(
                             Barang::query()
-                                ->with('merek')
+                                ->whereHas('konversis')
+                                ->with('merek:id,nama')
+                                ->select('id', 'nama', 'merek_id')
                                 ->orderBy('nama')
                                 ->limit(50)
                                 ->get()
@@ -102,33 +111,123 @@ class PembelianForm
                                     $barang->id => "{$barang->nama} - Merek: {$barang->merek->nama}",
                                 ])
                         )
-                        ->preload()
-                        ->searchable()
+                        ->getSearchResultsUsing(function (string $search) {
+                            return Barang::query()
+                                ->whereHas('konversis')
+                                ->with('merek:id,nama')
+                                ->select('id', 'nama', 'merek_id')
+                                ->where('nama', 'like', "%{$search}%")
+                                ->limit(50)
+                                ->orderBy('nama')
+                                ->get()
+                                ->mapWithKeys(fn ($barang) => [
+                                    $barang->id => "{$barang->nama} - Merek: {$barang->merek->nama}",
+                                ]);
+                        })
+                        ->afterStateUpdated(fn ($state, callable $set) => $set('satuan_id', null))
                         ->required()
-                        ->validationMessages(['required' => 'Nama barang wajib dipilih']),
+                        ->createOptionForm([
+                            Grid::make()
+                                ->columns(2)
+                                ->schema([
+                                    TextInput::make('barcode')
+                                        ->label('Barcode Barang')
+                                        ->unique('barangs', 'barcode')
+                                        ->validationMessages([
+                                            'unique' => 'Barcode barang sudah ada'
+                                        ])
+                                        ->columnSpan(1),
+
+                                    TextInput::make('nama')
+                                        ->label('Nama Barang')
+                                        ->required()
+                                        ->validationMessages([
+                                            'required' => 'Nama barang wajib di isi'
+                                        ])
+                                        ->columnSpan(1),
+                                ]),                            
+                            Grid::make()
+                                ->columns(2)
+                                ->schema([
+                                    self::createNestedSelect('jenis_id', 'Jenis', Jenis::class),
+                                    self::createNestedSelect('kategori_id', 'Kategori', Kategori::class),
+                                ]),
+
+                            Grid::make()
+                                ->columns(2)
+                                ->schema([
+                                    self::createNestedSelect('merek_id', 'Merek', Merek::class),
+                                    self::createNestedSelect('pabrikan_id', 'Pabrikan', Pabrikan::class),
+                                ]),
+
+                            self::createNestedSelect('satuan_id', 'Satuan Terkecil', Satuan::class),
+                        ])
+                        ->createOptionUsing(function (array $data) {
+                            try {
+                                $barang = Barang::create([
+                                    'barcode' => $data['barcode'] ?? null,
+                                    'nama' => $data['nama'],
+                                    'jenis_id' => $data['jenis_id'],
+                                    'kategori_id' => $data['kategori_id'],
+                                    'merek_id' => $data['merek_id'],
+                                    'pabrikan_id' => $data['pabrikan_id'],
+                                    'satuan_id' => $data['satuan_id'],
+                                ]);
+
+                                Konversi::create([
+                                    'barang_id' => $barang->id,
+                                    'satuan_id' => $data['satuan_id'],
+                                    'konversi_ke_satuan_terkecil' => 1,
+                                    'urutan' => 1,
+                                    'satuan_utama' => true,
+                                ]);
+
+                                return $barang->id;
+                            } catch (\Exception $e) {
+                                throw new \Exception("Gagal membuat barang: " . $e->getMessage());
+                            }
+                        })
+                        ->createOptionAction(fn ($action) => $action->modalWidth('3xl')->modalHeading('Buat Barang Baru')),
 
                     TextInput::make('no_batch')
+                        ->disabled(fn (Get $get) => !$get('barang_id'))
                         ->required()
                         ->validationMessages([
                             'required' => 'No. batch wajib di isi'
                         ]),
 
                     DatePicker::make('tgl_kadaluarsa')
+                        ->disabled(fn (Get $get) => !$get('barang_id'))
                         ->required()
                         ->validationMessages([
                             'required' => 'Tanggal kadaluarsa wajib di isi'
                         ]),
 
                     Select::make('satuan_id')
-                        ->options(Satuan::query()->pluck('nama', 'id'))
-                        ->searchable()
-                        ->placeholder('Pilih')
+                        ->disabled(fn (Get $get) => !$get('barang_id'))
+                        ->options(function (callable $get) {
+                            $barangId = $get('barang_id');
+
+                            if (!$barangId) {
+                                return [];
+                            }
+
+                            return Konversi::where('barang_id', $barangId)
+                                ->with('satuan:id,nama')
+                                ->orderBy('urutan')
+                                ->get()
+                                ->pluck('satuan.nama', 'satuan_id');
+                        })
+                        ->native(false)
+                        ->live()
                         ->required()
+                        ->placeholder('Pilih')
                         ->validationMessages([
-                            'required' => 'Satuan wajib di pilih'
+                            'required' => 'Satuan wajib dipilih',
                         ]),
 
                     TextInput::make('jumlah')
+                        ->disabled(fn (Get $get) => !$get('barang_id'))
                         ->numeric()
                         ->required()
                         ->default(1)
@@ -141,6 +240,7 @@ class PembelianForm
                         ]),
 
                     TextInput::make('harga')
+                        ->disabled(fn (Get $get) => !$get('barang_id'))
                         ->required()
                         ->prefix('Rp')
                         ->mask(RawJs::make('$money($input)'))
@@ -154,6 +254,7 @@ class PembelianForm
                         ]),
 
                     TextInput::make('subtotal_item')
+                        ->disabled(fn (Get $get) => !$get('barang_id'))
                         ->prefix('Rp')
                         ->readOnly()
                         ->default(0)
@@ -215,6 +316,49 @@ class PembelianForm
                 ->columns(4)
                 ->columnSpanFull(),
         ]);
+    }
+
+    private static function createNestedSelect(string $fieldName, string $label, string $modelClass): Select
+    {
+        $tableName = (new $modelClass)->getTable();
+        
+        return Select::make($fieldName)
+            ->label($label)
+            ->options(
+                $modelClass::query()
+                    ->orderBy('nama')
+                    ->pluck('nama', 'id')
+            )
+            ->searchable()
+            ->preload()
+            ->required()
+            ->validationMessages([
+                'required' => "{$label} barang harus di pilih"
+            ])
+            ->native(false)
+            ->columnSpan(1)
+            ->createOptionForm([
+                TextInput::make('nama')
+                    ->label("Nama {$label}")
+                    ->required()
+                    ->unique($tableName, 'nama')
+                    ->validationMessages([
+                        'required' => "Nama {$label} wajib di isi",
+                        'unique' => "Nama {$label} sudah ada",
+                    ])
+                    ->columnSpanFull(),
+            ])
+            ->createOptionUsing(function (array $data) use ($modelClass, $label) {
+                try {
+                    $model = $modelClass::create([
+                        'nama' => $data['nama'],
+                    ]);
+                    return $model->id;
+                } catch (\Exception $e) {
+                    throw new \Exception("Gagal membuat {$label}: " . $e->getMessage());
+                }
+            })
+            ->createOptionAction(fn ($action) => $action->modalWidth('md')->modalHeading("Buat {$label}"));
     }
 
     // ============================================================

@@ -14,6 +14,7 @@ class Batch extends Model
         'barang_id',
         'sumber',
         'pembelian_id',
+        'pembelian_detail_id',
         'supplier_id',
         'tgl_kadaluarsa',
         'jumlah',
@@ -35,5 +36,16 @@ class Batch extends Model
     public function pembelian()
     {
         return $this->belongsTo(Pembelian::class);
+    }
+
+    public function pembelianDetail()
+    {
+        return $this->belongsTo(PembelianDetail::class);
+    }
+
+    public function konversis()
+    {
+        return $this->belongsTo(Barang::class, 'barang_id')
+            ->with('konversis');
     }
 }

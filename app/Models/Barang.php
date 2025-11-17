@@ -16,6 +16,7 @@ class Barang extends Model
         'jenis_id',
         'kategori_id',
         'merek_id',
+        'pabrikan_id',
         'satuan_id',
     ];
 
@@ -47,6 +48,11 @@ class Barang extends Model
     public function konversis()
     {
         return $this->hasMany(Konversi::class);
+    }
+
+    public function batches()
+    {
+        return $this->hasMany(Batch::class, 'barang_id');
     }
 
     protected static function booted()

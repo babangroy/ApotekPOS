@@ -14,6 +14,7 @@ class PembelianDetail extends Model
         'barang_id',
         'satuan_id',
         'jumlah',
+        'jumlah_terkecil',
         'harga',
         'sub_total',
         'diskon',
