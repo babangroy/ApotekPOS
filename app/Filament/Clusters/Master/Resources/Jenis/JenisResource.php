@@ -50,8 +50,7 @@ class JenisResource extends Resource
         return $table
             ->recordTitleAttribute('nama')
             ->columns([
-                TextColumn::make('no')
-                    ->label('No.')
+                TextColumn::make('#')
                     ->rowIndex()
                     ->width('70px')
                     ->alignCenter(),

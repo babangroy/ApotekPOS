@@ -62,8 +62,7 @@ class SupplierResource extends Resource
             ->recordTitleAttribute('nama')
             ->defaultSort('nama', 'asc')
             ->columns([
-                TextColumn::make('no')
-                    ->label('No.')
+                TextColumn::make('#')
                     ->rowIndex()
                     ->width('70px')
                     ->alignCenter(),

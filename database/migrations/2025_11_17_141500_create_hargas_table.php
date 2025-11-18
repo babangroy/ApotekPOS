@@ -14,6 +14,12 @@ return new class extends Migration
         Schema::create('hargas', function (Blueprint $table) {
             $table->id();
             $table->foreignId('barang_id')->constrained('barangs')->restrictOnDelete();
+            $table->foreignId('batch_id')->constrained('batches')->restrictOnDelete();
+            $table->decimal('harga_umum', 15, 2)->default(0);
+            $table->decimal('harga_bidan', 15, 2)->default(0);
+            $table->boolean('is_override', 15, 2)->default(false);
+            $table->boolean('is_active', 15, 2)->default(true);
+            $table->foreignId('created_by')->constrained('users')->restrictOnDelete();
             $table->timestamps();
         });
     }

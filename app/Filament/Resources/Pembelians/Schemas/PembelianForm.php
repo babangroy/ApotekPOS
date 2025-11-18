@@ -92,7 +92,7 @@ class PembelianForm
                     TableColumn::make('Exp.')->width('160px'),
                     TableColumn::make('Satuan')->width('150px'),
                     TableColumn::make('Jumlah')->width('90px'),
-                    TableColumn::make('Harga')->width('200px'),
+                    TableColumn::make('Harga Satuan')->width('200px'),
                     TableColumn::make('Subtotal')->width('200px'),
                 ])
                 ->schema([

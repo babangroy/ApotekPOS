@@ -6,6 +6,7 @@ use App\Filament\Clusters\Master\Resources\Konversis\KonversiResource;
 use App\Models\Konversi;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ManageRecords;
+use Illuminate\Support\Facades\DB;
 
 class ManageKonversis extends ManageRecords
 {
@@ -17,21 +18,27 @@ class ManageKonversis extends ManageRecords
             CreateAction::make()
                 ->modalWidth('2xl')
                 ->using(function (array $data) {
-                    $barangId = $data['barang_id'];
-                    $konversiItems = $data['konversi_items'] ?? [];
 
-                    Konversi::where('barang_id', $barangId)->delete();
+                    DB::transaction(function () use ($data) {
 
-                    foreach ($konversiItems as $index => $item) {
-                        Konversi::create([
-                            'barang_id' => $barangId,
-                            'satuan_id' => $item['satuan_id'],
-                            'konversi_ke_satuan_terkecil' => $item['konversi_ke_satuan_terkecil'],
-                            'satuan_utama' => $item['satuan_utama'] ?? false,
-                            'urutan' => $index + 1,
-                        ]);
-                    }
-                })
+                        $barangId = $data['barang_id'];
+                        $items    = $data['konversi_items'] ?? [];
+                        
+                        Konversi::where('barang_id', $barangId)->delete();
+
+                        foreach ($items as $i => $item) {
+                            Konversi::create([
+                                'barang_id' => $barangId,
+                                'satuan_id' => $item['satuan_id'],
+                                'konversi_ke_satuan_terkecil' => $item['konversi_ke_satuan_terkecil'],
+                                'satuan_utama' => $item['satuan_utama'] ?? false,
+                                'urutan' => $i + 1,
+                            ]);
+                        }
+                    });
+
+                    return null;
+                }), 
 
         ];
     }

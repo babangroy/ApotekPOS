@@ -61,8 +61,7 @@ class StokResource extends Resource
             })
             ->defaultKeySort(false)
             ->columns([
-                TextColumn::make('no')
-                    ->label('No.')
+                TextColumn::make('#')
                     ->rowIndex()
                     ->width('70px')
                     ->alignCenter(),
