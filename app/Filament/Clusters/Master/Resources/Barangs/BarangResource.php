@@ -10,8 +10,10 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
+use Filament\Support\Colors\Color;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -210,6 +212,7 @@ class BarangResource extends Resource
                 TextColumn::make('satuan.nama')
                     ->label('Satuan Terkecil'),
             ])
+            ->defaultSort('nama', 'asc')
             ->filters([
                 //
             ])
@@ -218,9 +221,23 @@ class BarangResource extends Resource
                     ->iconButton()
                     ->tooltip('Ubah data')
                     ->modalWidth('3xl'),
+
                 DeleteAction::make()
                     ->iconButton()
-                    ->tooltip('Hapus data'),
+                    ->tooltip('Hapus data')
+                    ->before(function (Barang $record, DeleteAction $action) {
+                        $totalStok = $record->batches()->sum('jlh_tersedia');
+                        if ($totalStok > 0) {
+                            Notification::make()
+                                ->danger()
+                                ->title('Gagal')
+                                ->body('Barang '.$record->nama.' masih memiliki stok')
+                                ->color(Color::Red)
+                                ->send();
+                            $action->cancel();
+                            return;
+                        }
+                    }),                   
             ]);
     }
 

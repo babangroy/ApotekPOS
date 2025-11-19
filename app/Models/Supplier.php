@@ -10,4 +10,9 @@ class Supplier extends Model
     use HasFactory;
 
     protected $fillable = ['nama', 'alamat', 'no_telp'];
+
+    public function pembelians()
+    {
+        return $this->hasMany(Pembelian::class);
+    }
 }

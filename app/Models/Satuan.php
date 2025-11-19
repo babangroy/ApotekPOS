@@ -16,4 +16,9 @@ class Satuan extends Model
     {
         return $this->hasMany(Barang::class);
     }
+
+    public function konversis(): HasMany
+    {
+        return $this->hasMany(Konversi::class);
+    }
 }

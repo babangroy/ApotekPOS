@@ -12,6 +12,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
+use Filament\Support\Colors\Color;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -60,6 +61,7 @@ class KategoriResource extends Resource
                     ->sortable()
                     ->searchable(),
             ])
+            ->defaultSort('nama', 'asc')
             ->filters([
                 //
             ])
@@ -74,16 +76,16 @@ class KategoriResource extends Resource
                     ->before(function (Kategori $record, DeleteAction $action) {
                         if ($record->barangs()->exists()) {
                             Notification::make()
-                                ->title('Error')
-                                ->body('Kategori ini masih digunakan pada tabel Barang.')
                                 ->danger()
-                                ->duration(4000)
+                                ->title('Gagal')
+                                ->body('Masih ada barang yang menggunakan kategori ' . $record->nama)
+                                ->color(Color::Red)
                                 ->send();
                             $action->cancel();
                             return;
                         }
                     }),
-            ]);
+                ]);
     }
 
     public static function getPages(): array

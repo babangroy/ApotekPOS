@@ -10,8 +10,10 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
+use Filament\Support\Colors\Color;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -79,6 +81,7 @@ class SupplierResource extends Resource
                 TextColumn::make('no_telp')
                     ->label('No Telepon'),
             ])
+            ->defaultSort('nama', 'asc')
             ->filters([
                 //
             ])
@@ -89,7 +92,19 @@ class SupplierResource extends Resource
                     ->modalWidth('md'),
                 DeleteAction::make()
                     ->iconButton()
-                    ->tooltip('Hapus data'),
+                    ->tooltip('Hapus data')
+                    ->before(function (Supplier $record, DeleteAction $action) {
+                        if ($record->pembelians()->exists()) {
+                            Notification::make()
+                                ->danger()
+                                ->title('Gagal')
+                                ->body('Masih ada data pembelian yang menggunakan supplier ' . $record->nama)
+                                ->color(Color::Red)
+                                ->send();
+                            $action->cancel();
+                            return;
+                        }
+                    }),                    
             ]);
     }
 

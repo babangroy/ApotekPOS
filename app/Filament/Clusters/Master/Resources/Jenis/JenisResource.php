@@ -12,6 +12,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
+use Filament\Support\Colors\Color;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -60,6 +61,7 @@ class JenisResource extends Resource
                     ->sortable()
                     ->searchable(),
             ])
+            ->defaultSort('nama', 'asc')
             ->filters([
                 //
             ])
@@ -75,11 +77,12 @@ class JenisResource extends Resource
                     ->before(function (Jenis $record, DeleteAction $action) {
                         if ($record->barangs()->exists()) {
                             Notification::make()
-                                ->title('Error')
-                                ->body('Jenis ini masih digunakan pada tabel Barang.')
                                 ->danger()
-                                ->duration(4000)
+                                ->title('Gagal')
+                                ->body('Masih ada barang yang menggunakan jenis ' . $record->nama)
+                                ->color(Color::Red)
                                 ->send();
+
                             $action->cancel();
                             return;
                         }

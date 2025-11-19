@@ -12,6 +12,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
+use Filament\Support\Colors\Color;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -60,6 +61,7 @@ class SatuanResource extends Resource
                     ->sortable()
                     ->searchable(),
             ])
+            ->defaultSort('nama', 'asc')
             ->filters([
                 //
             ])
@@ -68,16 +70,17 @@ class SatuanResource extends Resource
                     ->iconButton()
                     ->tooltip('Ubah data')
                     ->modalWidth('md'),
+                    
                 DeleteAction::make()
                     ->iconButton()
                     ->tooltip('Hapus data')
                     ->before(function (Satuan $record, DeleteAction $action) {
-                        if ($record->barangs()->exists()) {
+                        if ($record->konversis()->exists()) {
                             Notification::make()
-                                ->title('Error')
-                                ->body('Satuan ini masih digunakan pada tabel Barang.')
                                 ->danger()
-                                ->duration(4000)
+                                ->title('Gagal')
+                                ->body('Masih ada konversi barang yang menggunakan satuan ' . $record->nama)
+                                ->color(Color::Red)
                                 ->send();
                             $action->cancel();
                             return;
