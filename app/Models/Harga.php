@@ -27,4 +27,9 @@ class Harga extends Model
     {
         return $this->belongsTo(Batch::class);
     }
+
+    public function satuan()
+    {
+        return $this->belongsTo(Satuan::class);
+    }
 }
