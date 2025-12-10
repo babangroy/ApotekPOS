@@ -18,6 +18,7 @@ class PembelianInfolist
                     ->label('Detail Barang')
                     ->table([
                         TableColumn::make('Nama Barang')->alignment(Alignment::Center),
+                        TableColumn::make('No. Batch')->alignment(Alignment::Center),
                         TableColumn::make('Satuan')->alignment(Alignment::Center),
                         TableColumn::make('Jumlah')->alignment(Alignment::Center),
                         TableColumn::make('Harga')->alignment(Alignment::Center),
@@ -28,6 +29,7 @@ class PembelianInfolist
                     ])
                     ->schema([                      
                         TextEntry::make('barang_nama_with_merek'),
+                        TextEntry::make('batch.no_batch')->alignCenter(),
                         TextEntry::make('satuan.nama')->alignCenter(),
                         TextEntry::make('jumlah')->alignCenter(),
                         TextEntry::make('harga')->money('IDR')->alignEnd(),

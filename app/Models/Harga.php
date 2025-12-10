@@ -18,12 +18,12 @@ class Harga extends Model
         'is_active'
     ];
 
-    public function barangs()
+    public function barang()
     {
         return $this->belongsTo(Barang::class);
     }
 
-    public function batches()
+    public function batch()
     {
         return $this->belongsTo(Batch::class);
     }

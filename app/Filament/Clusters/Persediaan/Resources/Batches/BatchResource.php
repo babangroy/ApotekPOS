@@ -6,7 +6,6 @@ use App\Filament\Clusters\Persediaan\PersediaanCluster;
 use App\Filament\Clusters\Persediaan\Resources\Batches\Pages\ManageBatches;
 use App\Models\Barang;
 use App\Models\Batch;
-use App\Models\Merek;
 use App\Services\StockConverterService;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -41,10 +40,16 @@ class BatchResource extends Resource
             ]);
     }
 
-    protected function getTableQuery(): Builder
+    public static function getEloquentQuery(): Builder
     {
-        return parent::getTableQuery()->with(['barang.merek', 'supplier']);
+        return parent::getEloquentQuery()
+            ->with([
+                'barang.merek',
+                'barang.konversis.satuan',
+                'supplier',
+            ]);
     }
+
 
     public static function table(Table $table): Table
     {
@@ -94,8 +99,9 @@ class BatchResource extends Resource
                     ->label('Stok Tersedia')
                     ->formatStateUsing(function ($state, $record) {
                         $converter = app(StockConverterService::class);
-                        return $converter->formatAllUnits($record->barang_id, $state);
-                    }),
+                        return $converter->formatAllUnits($record->barang, $state);
+                    })
+                    ->sortable(),
                 ])
                 ->defaultSort(function (Builder $query): Builder {
                     return $query->orderBy(

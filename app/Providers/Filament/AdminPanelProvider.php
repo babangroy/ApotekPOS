@@ -65,6 +65,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->maxContentWidth(Width::Full)
             ->sidebarWidth('17rem')
+            ->topbar(false)
             ->spa();
     }
 }

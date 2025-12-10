@@ -41,4 +41,9 @@ class PembelianDetail extends Model
     {
         return $this->barang?->nama . ' - ' . $this->barang?->merek?->nama;
     }
+
+    public function batch()
+    {
+        return $this->hasOne(Batch::class, 'pembelian_detail_id');
+    }
 }

@@ -41,6 +41,15 @@ class StokResource extends Resource
             ]);
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->with([
+                'barang.merek',
+                'barang.konversis.satuan',
+            ]);
+    }
+
     public static function table(Table $table): Table
     {
         return $table
@@ -56,7 +65,7 @@ class StokResource extends Resource
                 return $query
                     ->joinSub($subMin, 'm', 'batches.id', '=', 'm.id')
                     ->leftJoinSub($subSum, 's', 'batches.barang_id', '=', 's.barang_id')
-                    ->with(['barang.merek', 'supplier'])
+                    ->with(['barang.merek'])
                     ->select('batches.*', 's.total_stok');
             })
             ->defaultKeySort(false)
@@ -92,7 +101,8 @@ class StokResource extends Resource
                     ->label('Stok Tersedia')
                     ->formatStateUsing(function ($state, $record) {
                         $converter = app(StockConverterService::class);
-                        return $converter->formatAllUnits($record->barang_id, $state);
+                        return $converter->formatAllUnits($record->barang, $state);
+
                     })
                     ->sortable(),
             ])

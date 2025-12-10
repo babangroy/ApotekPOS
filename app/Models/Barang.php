@@ -47,7 +47,7 @@ class Barang extends Model
 
     public function konversis()
     {
-        return $this->hasMany(Konversi::class);
+        return $this->hasMany(Konversi::class)->orderBy('urutan', 'desc');
     }
 
     public function batches()
@@ -59,6 +59,18 @@ class Barang extends Model
     {
         return $this->nama . ' - ' . $this->merek?->nama;
     }
+
+    // public function getKonversiMapAttribute()
+    // {
+    //     return $this->konversis
+    //         ->sortBy('urutan')
+    //         ->map(fn ($k) => [
+    //             'urutan' => $k->urutan,
+    //             'nama'   => $k->satuan->nama,
+    //             'faktor' => $k->konversi_ke_satuan_terkecil,
+    //         ])
+    //         ->values(); // reset index
+    // }
 
     protected static function booted()
     {

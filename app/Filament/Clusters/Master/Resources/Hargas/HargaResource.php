@@ -4,9 +4,10 @@ namespace App\Filament\Clusters\Master\Resources\Hargas;
 
 use App\Filament\Clusters\Master\MasterCluster;
 use App\Filament\Clusters\Master\Resources\Hargas\Pages\ManageHargas;
-use App\Models\Barang;
+use App\Models\Batch;
 use App\Models\Harga;
 use App\Models\Konversi;
+use App\Models\Satuan;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -46,53 +47,85 @@ class HargaResource extends Resource
             ->components([
                 Select::make('barang_id')
                     ->label('Nama Barang')
-                    ->options(
-                        Barang::whereHas('konversis')
-                            ->with('merek')
-                            ->orderBy('nama')
-                            ->limit(50)
-                            ->get()
-                            ->mapWithKeys(fn ($barang) => [
-                                $barang->id => $barang->nama . ' - ' . ($barang->merek->nama ?? 'Tanpa Merek')
-                            ])
-                    )
                     ->searchable()
+
+                    ->options(function () {
+                        return Batch::query()
+                            ->selectRaw("
+                                batches.barang_id,
+                                CONCAT(
+                                    barangs.nama, ' - ',
+                                    COALESCE(mereks.nama, ''), 
+                                    ' (No. Batch: ', batches.no_batch, ')'
+                                ) AS label
+                            ")
+                            ->join('barangs', 'barangs.id', '=', 'batches.barang_id')
+                            ->leftJoin('mereks', 'mereks.id', '=', 'barangs.merek_id')
+                            ->limit(50)
+                            ->orderBy('barangs.nama')
+                            ->pluck('label', 'id');
+                    })
+
                     ->getSearchResultsUsing(function (string $search) {
-                        return Barang::whereHas('konversis')
-                            ->with('merek')
-                            ->where('nama', 'like', "%{$search}%")
-                            ->orWhereHas('merek', function ($query) use ($search) {
-                                $query->where('nama', 'like', "%{$search}%");
+                        return Batch::query()
+                            ->selectRaw("
+                                batches.barang_id,
+                                CONCAT(
+                                    barangs.nama, ' - ',
+                                    COALESCE(mereks.nama, ''), 
+                                    ' (', batches.no_batch, ')'
+                                ) AS label
+                            ")
+                            ->join('barangs', 'barangs.id', '=', 'batches.barang_id')
+                            ->leftJoin('mereks', 'mereks.id', '=', 'barangs.merek_id')
+                            ->where(function ($q) use ($search) {
+                                $q->where('barangs.nama', 'like', "%{$search}%")
+                                ->orWhere('mereks.nama', 'like', "%{$search}%")
+                                ->orWhere('batches.no_batch', 'like', "%{$search}%");
                             })
-                            ->orderBy('nama')
-                            ->get()
-                            ->mapWithKeys(fn ($barang) => [
-                                $barang->id => $barang->nama . ' - ' . ($barang->merek->nama ?? 'Tanpa Merek')
-                            ]);
+                            ->limit(50)
+                            ->pluck('label', 'id')
+                            ->toArray();
+                    })
+
+                    ->getOptionLabelUsing(function ($value) {
+                        return Batch::query()
+                            ->selectRaw("
+                                CONCAT(
+                                    barangs.nama, ' - ',
+                                    COALESCE(mereks.nama, ''), 
+                                    ' (', batches.no_batch, ')'
+                                ) AS label
+                            ")
+                            ->join('barangs', 'barangs.id', '=', 'batches.barang_id')
+                            ->leftJoin('mereks', 'mereks.id', '=', 'barangs.merek_id')
+                            ->where('batches.id', $value)
+                            ->value('label');
                     })
                     ->preload()
                     ->unique(ignoreRecord: true)
                     ->required()
                     ->live()
                     ->afterStateUpdated(function ($state, callable $set) {
+
                         $set('harga', []);
-                        
-                        if ($state) {
-                            $konversi = Konversi::with('satuan')
-                                ->where('barang_id', $state)
-                                ->get();
-                            
-                            $hargaData = [];
-                            
-                            foreach ($konversi as $item) {
-                                $hargaData[] = [
-                                    'satuan_id' => $item->satuan_id
-                                ];
-                            }
-                            
-                            $set('harga', $hargaData);
-                        }
-                    })                    
+
+                        if (!$state) return;
+                        $barangId = Batch::query()
+                            ->join('barangs', 'barangs.id', '=', 'batches.barang_id')
+                            ->where('batches.id', $state)
+                            ->value('barangs.id');
+
+                        if (!$barangId) return;
+
+                        $konversi = Konversi::with('satuan')
+                            ->where('barang_id', $barangId)
+                            ->get();
+
+                        $set('harga', $konversi->map(fn ($item) => [
+                            'satuan_id' => $item->satuan_id,
+                        ])->toArray());
+                    })
                     ->validationMessages([
                         'required' => 'Nama barang harus dipilih',
                         'unique' => 'Barang ini sudah memiliki harga manual'
@@ -106,14 +139,13 @@ class HargaResource extends Resource
                         Repeater::make('harga')
                             ->label('Harga Umum')
                             ->table([
-                                TableColumn::make('Satuan')
-                                    ->width('150px'),
+                                TableColumn::make('Satuan')->width('150px'),
                                 TableColumn::make('Harga Umum'),
                                 TableColumn::make('Harga Bidan'),
                             ])
                             ->schema([
                                 Select::make('satuan_id')
-                                    ->relationship(name:'satuan', titleAttribute:'nama')
+                                    ->options(Satuan::query()->pluck('nama', 'id'))
                                     ->disabled()
                                     ->dehydrated()
                                     ->required(),
@@ -140,50 +172,49 @@ class HargaResource extends Resource
                             ->deletable(false)
                             ->addable(false)
                             ->disabled(fn (Get $get): bool => !$get('barang_id')),
-                            
-                            Toggle::make('is_active')
-                                ->label('Harga aktif?')
-                                ->onColor('info')
-                                ->offColor('danger')
-                                ->default(true)
-                                ->disabled(fn (Get $get): bool => !$get('barang_id'))
-                                ->helperText('Jika non-aktif, maka harga jual akan otomatis diperoleh dari margin'),
+
+                        Toggle::make('is_active')
+                            ->label('Harga aktif?')
+                            ->onColor('info')
+                            ->offColor('danger')
+                            ->default(true)
+                            ->disabled(fn (Get $get): bool => !$get('barang_id'))
+                            ->helperText('Jika non-aktif, maka harga jual akan otomatis diperoleh dari margin'),
                     ])
             ]);
     }
+
 
     public static function table(Table $table): Table
     {
         return $table
             ->recordTitleAttribute('barang_id')
             ->columns([
-                TextColumn::make('barang_id')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('batch_id')
-                    ->numeric()
-                    ->sortable(),
+                TextColumn::make('barang.nama')
+                    ->label('Nama Barang')
+                    ->sortable()
+                    ->searchable(),
+
+                TextColumn::make('batch.no_batch')
+                    ->label('No. Batch'),
+
                 TextColumn::make('harga_umum')
+                    ->label('Harga Umum')
                     ->numeric()
-                    ->sortable(),
+                    ->money('IDR'),
+
                 TextColumn::make('harga_bidan')
+                    ->label('Harga Bidan')
                     ->numeric()
-                    ->sortable(),
-                IconColumn::make('is_override')
-                    ->boolean(),
+                    ->money('IDR'),
+
                 IconColumn::make('is_active')
+                    ->label('Aktif')
                     ->boolean(),
+
                 TextColumn::make('created_by')
-                    ->numeric()
+                    ->label('Oleh')
                     ->sortable(),
-                TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 //

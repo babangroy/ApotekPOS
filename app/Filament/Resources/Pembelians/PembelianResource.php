@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\Pembelians;
 
 use App\Filament\Resources\Pembelians\Pages\CreatePembelian;
-use App\Filament\Resources\Pembelians\Pages\EditPembelian;
 use App\Filament\Resources\Pembelians\Pages\ListPembelians;
 use App\Filament\Resources\Pembelians\Pages\ViewPembelian;
 use App\Filament\Resources\Pembelians\Schemas\PembelianForm;
@@ -15,6 +14,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 class PembelianResource extends Resource
@@ -27,11 +27,20 @@ class PembelianResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'kode';
 
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->with([
+                'details.barang.merek',
+                'details.satuan',
+                'details.batch',
+            ]);
+    }
+
     public static function form(Schema $schema): Schema
     {
         return (new PembelianForm())->configure($schema);
     }
-
 
     public static function infolist(Schema $schema): Schema
     {
@@ -56,7 +65,6 @@ class PembelianResource extends Resource
             'index' => ListPembelians::route('/'),
             'create' => CreatePembelian::route('/create'),
             'view' => ViewPembelian::route('/{record}'),
-            // 'edit' => EditPembelian::route('/{record}/edit'),
         ];
     }
 }

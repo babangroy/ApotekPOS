@@ -40,14 +40,6 @@ class Batch extends Model
 
     public function pembelianDetail()
     {
-        return $this->belongsTo(PembelianDetail::class);
+        return $this->belongsTo(PembelianDetail::class, 'pembelian_detail_id');
     }
-
-    // public function konversis()
-    // {
-    //     return $this->belongsTo(Barang::class, 'barang_id')
-    //         ->with('konversis');
-    // }
-
-
 }

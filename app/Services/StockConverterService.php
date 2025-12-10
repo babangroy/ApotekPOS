@@ -33,13 +33,11 @@ class StockConverterService
      * Format stok ke semua satuan: 
      * contoh: "0 Box / 2 Strip / 25 Tablet" atau "0 Lusin / 0 Box / 2 Strip / 25 Tablet" atau "5 Tablet"
      */
-    public function formatAllUnits(int $barangId, float $jumlahTerkecil): string
+    public function formatAllUnits($barang, float $jumlahTerkecil): string
     {
         try {
-            $konversiList = Konversi::where('barang_id', $barangId)
-                ->with('satuan')
-                ->orderByDesc('urutan') // Urutkan dari terbesar ke terkecil
-                ->get();
+            // Pastikan sudah eager-loaded
+            $konversiList = $barang->konversis;
 
             if ($konversiList->isEmpty()) {
                 return "{$jumlahTerkecil} Unit";
@@ -49,33 +47,24 @@ class StockConverterService
 
             foreach ($konversiList as $konversi) {
                 if ($konversi->urutan == 1) {
-                    // Satuan terkecil - langsung ambil jumlah
                     $jumlahUnit = $jumlahTerkecil;
                 } else {
-                    // Hitung faktor konversi dari satuan ini ke satuan terkecil
                     $faktor = 1;
-                    
-                    // Kalikan semua konversi dari urutan ini sampai urutan 2
                     for ($i = $konversi->urutan; $i >= 2; $i--) {
-                        $currentKonversi = $konversiList->firstWhere('urutan', $i);
-                        if ($currentKonversi) {
-                            $faktor *= $currentKonversi->konversi_ke_satuan_terkecil;
+                        $current = $konversiList->firstWhere('urutan', $i);
+                        if ($current) {
+                            $faktor *= $current->konversi_ke_satuan_terkecil;
                         }
                     }
-                    
                     $jumlahUnit = floor($jumlahTerkecil / $faktor);
                 }
-                
-                // Format angka tanpa desimal
-                $jumlahUnit = (int)$jumlahUnit;
-                
-                // Tampilkan semua satuan meskipun 0
-                $resultParts[] = "{$jumlahUnit} {$konversi->satuan->nama}";
+
+                $resultParts[] = (int)$jumlahUnit . ' ' . $konversi->satuan->nama;
             }
 
             return implode(' / ', $resultParts);
-
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             return "{$jumlahTerkecil} Unit";
         }
     }
